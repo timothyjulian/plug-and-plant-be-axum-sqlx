@@ -7,7 +7,7 @@ edition = "2024"
 anyhow = "1.0.98"
 axum = "0.8.4"
 chrono = "0.4.41"
-clap = "4.5.40"
+clap = { version = "4.5.40", features = ["derive", "env"] }
 dotenv = "0.15.0"
 futures = "0.3.31"
 serde = { version = "1.0.219", features = ["derive"] }

@@ -84,7 +84,7 @@ where
         // Format: [service-name] - [trace_id, span_id, parent_span_id] timestamp [thread] LEVEL SERVICE-NAME - [SERVICE-NAME] (operation,duration,success,response_code[status]) [additional_info]
         write!(
             writer,
-            "[plug-and-plant-service] - [{}, {}, {}] {} [{}] {} PLUG-AND-PLANT - [PLUG-AND-PLANT] ({},{}ms,{},{}[{}]) {}",
+            "[plug-and-plant-service] - [{}, {}, {}] {} [{}] {} PLUG-AND-PLANT - [PLUG-AND-PLANT] ({},{}ms,{},{}[{}]) {}\n",
             trace_id,
             generate_span_id(),
             generate_parent_span_id(),

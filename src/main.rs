@@ -6,12 +6,14 @@ use axum::routing::get;
 use axum::Json;
 use clap::Parser;
 use plug_and_plant_be_axum_sqlx::config::Config;
-use plug_and_plant_be_axum_sqlx::logging::{get_trace_id_from_headers, trace_middleware};
+use plug_and_plant_be_axum_sqlx::logging::{get_trace_id_from_headers, trace_middleware, CustomFormatter};
 use plug_and_plant_be_axum_sqlx::response::{ApiResponse, codes};
 use sqlx::postgres::PgPoolOptions;
 use sqlx::PgPool;
 use tokio::net::TcpListener;
 use tracing::{info, warn, error};
+use tracing_appender;
+use tracing_subscriber;
 
 #[derive(serde::Serialize)]
 pub struct Profile {
@@ -41,15 +43,24 @@ pub struct DatabaseHealth {
 
 #[tokio::main]
 async fn main() -> anyhow::Result<()> {
-    // Initialize tracing
+    // Initialize custom logging with file output
+    let file_appender = tracing_appender::rolling::daily("./logs", "application.log");
+    let (non_blocking, _guard) = tracing_appender::non_blocking(file_appender);
+    
     tracing_subscriber::fmt()
-        .json()
+        .event_format(CustomFormatter)
+        .with_writer(non_blocking)
         .init();
 
     dotenv::dotenv().ok();
 
     let config = Config::parse();
-    info!("Starting server with config: {:?}", config);
+    info!(
+        operation = "SERVER_START",
+        response_code = "2001400",
+        "Starting server with config: {:?}", 
+        config
+    );
 
     let db = PgPoolOptions::new()
         .max_connections(10)
@@ -57,7 +68,11 @@ async fn main() -> anyhow::Result<()> {
         .await
         .context("could not connect to database_url")?;
 
-    info!("Database connection established");
+    info!(
+        operation = "DATABASE_CONNECT",
+        response_code = "2001400",
+        "Database connection established"
+    );
 
     let app = axum::Router::new()
         .route("/", get(index))
@@ -68,7 +83,13 @@ async fn main() -> anyhow::Result<()> {
         .with_state(db);
 
     let listener = TcpListener::bind("127.0.0.1:3000").await?;
-    info!("Server listening on {}", listener.local_addr().unwrap());
+    info!(
+        operation = "SERVER_LISTEN", 
+        response_code = "2001400",
+        "Server listening on {}", 
+        listener.local_addr().unwrap()
+    );
+    
     axum::serve(listener, app)
         .await
         .context("cannot start http server")?;
@@ -78,7 +99,12 @@ async fn main() -> anyhow::Result<()> {
 
 async fn index(headers: HeaderMap) -> Json<ApiResponse<Profile>> {
     let trace_id = get_trace_id_from_headers(&headers).unwrap_or_default();
-    info!("Processing index request");
+    info!(
+        operation = "GET_INDEX",
+        response_code = "2001400",
+        duration = 5,
+        "Processing index request"
+    );
     
     let profile = Profile {
         username: String::from("test"),
@@ -89,11 +115,25 @@ async fn index(headers: HeaderMap) -> Json<ApiResponse<Profile>> {
 // Example of success response with data
 async fn get_user(Path(user_id): Path<u32>, headers: HeaderMap) -> Result<Json<ApiResponse<User>>, (StatusCode, Json<ApiResponse<()>>)> {
     let trace_id = get_trace_id_from_headers(&headers).unwrap_or_default();
-    info!("Processing get_user request for user_id: {}", user_id);
+    let start_time = std::time::Instant::now();
+    
+    info!(
+        operation = "GET_USER",
+        user_id = %user_id,
+        "Processing get_user request"
+    );
     
     // Simulate user lookup
     if user_id == 1 {
-        info!("User found: {}", user_id);
+        let duration = start_time.elapsed().as_millis() as u64;
+        info!(
+            operation = "GET_USER", 
+            user_id = %user_id,
+            duration = duration,
+            response_code = "2001400",
+            "User found successfully"
+        );
+        
         let user = User {
             id: user_id,
             name: "John Doe".to_string(),
@@ -101,7 +141,15 @@ async fn get_user(Path(user_id): Path<u32>, headers: HeaderMap) -> Result<Json<A
         };
         Ok(Json(ApiResponse::success_with_trace_id(user, trace_id)))
     } else {
-        warn!("User not found: {}", user_id);
+        let duration = start_time.elapsed().as_millis() as u64;
+        warn!(
+            operation = "GET_USER",
+            user_id = %user_id,
+            duration = duration,
+            response_code = "4041400",
+            "User not found"
+        );
+        
         Err((
             StatusCode::NOT_FOUND,
             Json(ApiResponse::<()>::error_with_trace_id(codes::NOT_FOUND, "User not found", trace_id))
@@ -112,14 +160,22 @@ async fn get_user(Path(user_id): Path<u32>, headers: HeaderMap) -> Result<Json<A
 // Example of success response without data
 async fn health_check(headers: HeaderMap) -> Json<ApiResponse<()>> {
     let trace_id = get_trace_id_from_headers(&headers).unwrap_or_default();
-    info!("Processing health check request");
+    info!(
+        operation = "HEALTH_CHECK",
+        duration = 2,
+        response_code = "2001400",
+        "Processing health check request"
+    );
     Json(ApiResponse::success_empty_with_trace_id(trace_id))
 }
 
 // Advanced health check with database connectivity test
 async fn advanced_health_check(State(db): State<PgPool>, headers: HeaderMap) -> Json<ApiResponse<HealthStatus>> {
     let trace_id = get_trace_id_from_headers(&headers).unwrap_or_default();
-    info!("Processing advanced health check request");
+    info!(
+        operation = "ADVANCED_HEALTH_CHECK",
+        "Processing advanced health check request"
+    );
     
     let start_time = std::time::Instant::now();
     
@@ -127,7 +183,14 @@ async fn advanced_health_check(State(db): State<PgPool>, headers: HeaderMap) -> 
     let database_health = match sqlx::query("SELECT 1").fetch_one(&db).await {
         Ok(_) => {
             let response_time = start_time.elapsed().as_millis();
-            info!("Database health check successful, response time: {}ms", response_time);
+            info!(
+                operation = "DATABASE_HEALTH_CHECK",
+                response_time_ms = response_time,
+                duration = response_time,
+                response_code = "2001400",
+                "Database health check successful"
+            );
+            
             DatabaseHealth {
                 connected: true,
                 response_time_ms: Some(response_time),
@@ -135,7 +198,15 @@ async fn advanced_health_check(State(db): State<PgPool>, headers: HeaderMap) -> 
             }
         }
         Err(e) => {
-            error!("Database health check failed: {}", e);
+            let response_time = start_time.elapsed().as_millis();
+            error!(
+                operation = "DATABASE_HEALTH_CHECK",
+                duration = response_time,
+                response_code = "5001400",
+                error = %e,
+                "Database health check failed"
+            );
+            
             DatabaseHealth {
                 connected: false,
                 response_time_ms: None,
@@ -150,7 +221,14 @@ async fn advanced_health_check(State(db): State<PgPool>, headers: HeaderMap) -> 
         "unhealthy"
     };
 
-    info!("Overall system status: {}", overall_status);
+    let total_duration = start_time.elapsed().as_millis() as u64;
+    info!(
+        operation = "ADVANCED_HEALTH_CHECK",
+        status = %overall_status,
+        duration = total_duration,
+        response_code = "2001400",
+        "Overall system status determined"
+    );
 
     let health_status = HealthStatus {
         status: overall_status.to_string(),

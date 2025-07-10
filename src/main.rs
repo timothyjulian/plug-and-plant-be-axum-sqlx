@@ -6,6 +6,7 @@ use plug_and_plant_be_axum_sqlx::config::Config;
 use sqlx::postgres::PgPoolOptions;
 use tokio::net::TcpListener;
 use tower_http::trace::TraceLayer;
+use tracing::instrument;
 use tracing_subscriber::EnvFilter;
 use tracing_subscriber::prelude::*;
 
@@ -24,8 +25,11 @@ async fn main() -> anyhow::Result<()> {
         .with(EnvFilter::from_default_env())
         .with(
             tracing_subscriber::fmt::layer()
+                .with_thread_ids(true)
+                .with_thread_names(true)
                 .with_target(true)
-                .with_thread_names(true),
+                .with_level(true)
+                .with_line_number(true),
         )
         .try_init()
         .context("failed to initialize tracing subscriber")?;
@@ -50,6 +54,7 @@ async fn main() -> anyhow::Result<()> {
     Ok(())
 }
 
+#[instrument]
 async fn index() -> Json<Profile> {
     let profile = Profile {
         username: String::from("test"),

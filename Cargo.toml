@@ -20,4 +20,4 @@ uuid = { version = "1.17.0", features = ["v4"] }
 tracing = "0.1.41"
 tracing-log = "0.2.0"
 tracing-opentelemetry = "0.31.0"
-tracing-subscriber = { version = "0.3.19", features = ["env-filter"] }
+tracing-subscriber = { version = "0.3.19", features = ["env-filter", "fmt", "registry"] }

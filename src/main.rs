@@ -1,6 +1,7 @@
 use std::sync::Arc;
 
 use anyhow::Context;
+use aop_macro::log_calls;
 use axum::Extension;
 use axum::Json;
 use axum::routing::get;
@@ -14,7 +15,7 @@ use tracing::info;
 use tracing_subscriber::EnvFilter;
 use tracing_subscriber::prelude::*;
 
-#[derive(serde::Serialize)]
+#[derive(serde::Serialize, Debug)]
 pub struct Profile {
     pub username: String,
 }
@@ -68,6 +69,7 @@ async fn main() -> anyhow::Result<()> {
     Ok(())
 }
 
+#[log_calls]
 async fn index(ctx: Extension<ApiContext>) -> Json<Profile> {
     info!("testing");
     let profile = Profile {

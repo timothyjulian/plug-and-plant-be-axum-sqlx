@@ -21,3 +21,4 @@ tracing = "0.1.41"
 tracing-log = "0.2.0"
 tracing-opentelemetry = "0.31.0"
 tracing-subscriber = { version = "0.3.19", features = ["env-filter", "fmt", "registry"] }
+aop_macro = { path = "./aop_macro" }

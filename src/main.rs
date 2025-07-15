@@ -1,17 +1,17 @@
 use std::sync::Arc;
 
 use anyhow::Context;
-use aop_macro::log_calls;
 use axum::Extension;
 use axum::Json;
 use axum::routing::get;
+use axum::middleware;
 use clap::Parser;
 use plug_and_plant_be_axum_sqlx::config::Config;
+use plug_and_plant_be_axum_sqlx::request_context::RequestContext;
+use plug_and_plant_be_axum_sqlx::middleware::request_context_middleware;
 use sqlx::PgPool;
 use sqlx::postgres::PgPoolOptions;
 use tokio::net::TcpListener;
-use tower_http::trace::TraceLayer;
-use tracing::info;
 use tracing_subscriber::EnvFilter;
 use tracing_subscriber::prelude::*;
 
@@ -53,7 +53,8 @@ async fn main() -> anyhow::Result<()> {
 
     let app = axum::Router::new()
         .route("/", get(index))
-        .layer(TraceLayer::new_for_http())
+        .layer(middleware::from_fn(request_context_middleware))
+        // .layer(TraceLayer::new_for_http())
         .layer(Extension(ApiContext {
             config: Arc::new(config),
             db: db,
@@ -69,9 +70,10 @@ async fn main() -> anyhow::Result<()> {
     Ok(())
 }
 
-#[log_calls]
-async fn index(ctx: Extension<ApiContext>) -> Json<Profile> {
-    info!("testing");
+async fn index(
+    ctx: Extension<ApiContext>,
+    request_ctx: Extension<RequestContext>,
+) -> Json<Profile> {
     let profile = Profile {
         username: String::from("test"),
     };

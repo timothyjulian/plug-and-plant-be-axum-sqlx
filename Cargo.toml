@@ -6,6 +6,8 @@ edition = "2024"
 [dependencies]
 anyhow = "1.0.98"
 axum = "0.8.4"
+http-body-util = "0.1"
+bytes = "1"
 chrono = "0.4.41"
 clap = { version = "4.5.40", features = ["derive", "env"] }
 dotenv = "0.15.0"

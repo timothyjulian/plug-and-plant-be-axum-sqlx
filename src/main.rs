@@ -28,6 +28,16 @@ struct ApiContext {
 
 #[tokio::main]
 async fn main() -> anyhow::Result<()> {
+        println!(
+        r#"
+██████╗ ██╗     ██╗   ██╗ ██████╗    ██╗   ██████╗ ██╗      █████╗ ███╗   ██╗████████╗
+██╔══██╗██║     ██║   ██║██╔════╝    ██║   ██╔══██╗██║     ██╔══██╗████╗  ██║╚══██╔══╝
+██████╔╝██║     ██║   ██║██║  ███╗████████╗██████╔╝██║     ███████║██╔██╗ ██║   ██║   
+██╔═══╝ ██║     ██║   ██║██║   ██║██╔═██╔═╝██╔═══╝ ██║     ██╔══██║██║╚██╗██║   ██║   
+██║     ███████╗╚██████╔╝╚██████╔╝██████║  ██║     ███████╗██║  ██║██║ ╚████║   ██║   
+╚═╝     ╚══════╝ ╚═════╝  ╚═════╝ ╚═════╝  ╚═╝     ╚══════╝╚═╝  ╚═╝╚═╝  ╚═══╝   ╚═╝   
+"#
+    );
     dotenv::dotenv().ok();
     let config = Config::parse();
 
@@ -56,7 +66,6 @@ async fn main() -> anyhow::Result<()> {
     let app = axum::Router::new()
         .route("/", get(index))
         .layer(middleware::from_fn(request_context_middleware))
-        // .layer(TraceLayer::new_for_http())
         .layer(Extension(ApiContext {
             config: Arc::new(config),
             db: db,

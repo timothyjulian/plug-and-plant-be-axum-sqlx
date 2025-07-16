@@ -3,12 +3,12 @@ use std::sync::Arc;
 use anyhow::Context;
 use axum::Extension;
 use axum::Json;
-use axum::routing::get;
 use axum::middleware;
+use axum::routing::get;
 use clap::Parser;
 use plug_and_plant_be_axum_sqlx::config::Config;
-use plug_and_plant_be_axum_sqlx::request_context::RequestContext;
-use plug_and_plant_be_axum_sqlx::middleware::request_context_middleware;
+use plug_and_plant_be_axum_sqlx::http::middleware::request_context_middleware;
+use plug_and_plant_be_axum_sqlx::http::request_context::RequestContext;
 use sqlx::PgPool;
 use sqlx::postgres::PgPoolOptions;
 use tokio::net::TcpListener;
@@ -38,9 +38,7 @@ async fn main() -> anyhow::Result<()> {
             tracing_subscriber::fmt::layer()
                 .with_thread_ids(true)
                 .with_thread_names(true)
-                .with_target(true)
-                .with_level(true)
-                .with_line_number(true),
+                .with_level(true),
         )
         .try_init()
         .context("failed to initialize tracing subscriber")?;
@@ -50,6 +48,10 @@ async fn main() -> anyhow::Result<()> {
         .connect(&config.database_url)
         .await
         .context("could not connect to database_url")?;
+
+    // This embeds database migrations in the application binary so we can ensure the database
+    // is migrated correctly on startup
+    sqlx::migrate!().run(&db).await?;
 
     let app = axum::Router::new()
         .route("/", get(index))

@@ -24,9 +24,3 @@ impl RequestContext {
         self
     }
 }
-
-impl std::fmt::Display for RequestContext {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(f, "[{} {} {}]", self.request_id, self.method, self.path,)
-    }
-}

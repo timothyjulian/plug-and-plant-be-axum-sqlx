@@ -16,7 +16,6 @@ use tracing::Instrument;
 
 use crate::http::context::RequestContext;
 
-/// Middleware that adds request context, logging, and timing information to HTTP requests
 pub async fn request_context_middleware(req: Request, next: Next) -> Response {
     let start_time = Instant::now();
 
@@ -29,7 +28,6 @@ pub async fn request_context_middleware(req: Request, next: Next) -> Response {
     }
 }
 
-/// Process the request with full context tracking and logging
 async fn process_request_with_context(
     mut req: Request,
     next: Next,
@@ -38,19 +36,15 @@ async fn process_request_with_context(
     let method = req.method().to_string();
     let path = req.uri().path().to_string();
 
-    // Extract and log request details
     let request_headers = headers_to_map(req.headers());
     let request_body = extract_body_bytes(req.body_mut()).await?;
     let request_body_log = format_body_for_logging(&request_body);
 
-    // Create request context
     let context = create_request_context(&method, &path);
     let request_id = context.request_id.clone();
 
-    // Rebuild request with buffered body and context
     let new_req = rebuild_request_with_context(req, request_body, context)?;
 
-    // Create tracing span for the request
     let span = tracing::info_span!("http_request", request_id = %request_id);
 
     // Execute request within the span
@@ -68,7 +62,6 @@ async fn process_request_with_context(
     Ok(response)
 }
 
-/// Extract body bytes from request/response body
 async fn extract_body_bytes(
     body: &mut Body,
 ) -> Result<Bytes, Box<dyn std::error::Error + Send + Sync>> {
@@ -81,31 +74,26 @@ async fn extract_body_bytes(
     }
 }
 
-/// Format body bytes for logging (JSON, text, or binary indicator)
 fn format_body_for_logging(body_bytes: &Bytes) -> String {
     if body_bytes.is_empty() {
         return String::new();
     }
 
-    // Try to parse as JSON first
     if let Ok(json) = serde_json::from_slice::<Value>(body_bytes) {
         return json.to_string();
     }
 
-    // Fallback to UTF-8 text
     match std::str::from_utf8(body_bytes) {
         Ok(text) => text.to_string(),
         Err(_) => "<binary or non-UTF8 content>".to_string(),
     }
 }
 
-/// Create a new request context with metadata
 fn create_request_context(method: &str, path: &str) -> RequestContext {
     RequestContext::new(method.to_string(), path.to_string())
         .add_metadata("timestamp".to_string(), Utc::now().to_rfc3339())
 }
 
-/// Rebuild request with buffered body and context extension
 fn rebuild_request_with_context(
     req: Request,
     body_bytes: Bytes,
@@ -118,7 +106,6 @@ fn rebuild_request_with_context(
     Ok(Request::from_parts(parts, new_body))
 }
 
-/// Log incoming request details
 fn log_incoming_request(
     method: &str,
     path: &str,
@@ -129,7 +116,6 @@ fn log_incoming_request(
     tracing::debug!("[IN]({},{}){},{}", method, path, headers_json, body_log);
 }
 
-/// Process response with logging and timing
 async fn process_response(
     response: Response,
     method: &str,
@@ -139,7 +125,6 @@ async fn process_response(
     let status = response.status();
     let (mut parts, body) = response.into_parts();
 
-    // Add timestamp header
     add_timestamp_header(&mut parts.headers)?;
 
     // Extract and log response body
@@ -157,7 +142,6 @@ async fn process_response(
     Ok(Response::from_parts(parts, Body::from(response_body_bytes)))
 }
 
-/// Add timestamp header to response
 fn add_timestamp_header(
     headers: &mut HeaderMap,
 ) -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
@@ -167,7 +151,6 @@ fn add_timestamp_header(
     Ok(())
 }
 
-/// Log outgoing response details
 fn log_outgoing_response(method: &str, path: &str, headers: &HeaderMap, body_bytes: &Bytes) {
     let response_headers = headers_to_map(headers);
     let response_headers_json = serde_json::to_string(&response_headers).unwrap_or_default();
@@ -182,7 +165,6 @@ fn log_outgoing_response(method: &str, path: &str, headers: &HeaderMap, body_byt
     );
 }
 
-/// Log request summary with timing and status
 fn log_request_summary(
     method: &str,
     path: &str,
@@ -198,7 +180,6 @@ fn log_request_summary(
     );
 }
 
-/// Create an error response for middleware failures
 fn create_error_response() -> Response {
     Response::builder()
         .status(StatusCode::INTERNAL_SERVER_ERROR)
@@ -206,7 +187,6 @@ fn create_error_response() -> Response {
         .unwrap_or_else(|_| Response::new(Body::empty()))
 }
 
-/// Convert HeaderMap to HashMap for serialization
 fn headers_to_map(headers: &HeaderMap) -> HashMap<String, String> {
     headers
         .iter()

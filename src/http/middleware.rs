@@ -14,7 +14,7 @@ use http_body_util::BodyExt;
 use serde_json::Value;
 use tracing::Instrument;
 
-use crate::http::request_context::RequestContext;
+use crate::http::context::RequestContext;
 
 /// Middleware that adds request context, logging, and timing information to HTTP requests
 pub async fn request_context_middleware(req: Request, next: Next) -> Response {

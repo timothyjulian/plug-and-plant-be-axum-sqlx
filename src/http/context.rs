@@ -1,5 +1,8 @@
-use std::collections::HashMap;
+use sqlx::PgPool;
+use std::{collections::HashMap, sync::Arc};
 use uuid::Uuid;
+
+use crate::config::Config;
 
 #[derive(Clone, Debug)]
 pub struct RequestContext {
@@ -23,4 +26,10 @@ impl RequestContext {
         self.metadata.insert(key, value);
         self
     }
+}
+
+#[derive(Clone, Debug)]
+pub struct ApiContext {
+    pub config: Arc<Config>,
+    pub db: PgPool,
 }

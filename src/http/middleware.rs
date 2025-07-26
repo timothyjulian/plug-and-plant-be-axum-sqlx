@@ -13,6 +13,7 @@ use chrono::Utc;
 use http_body_util::BodyExt;
 use serde_json::Value;
 use tracing::Instrument;
+use uuid::Uuid;
 
 use crate::http::context::RequestContext;
 
@@ -39,8 +40,12 @@ async fn process_request_with_context(
     let request_headers = headers_to_map(req.headers());
     let request_body = extract_body_bytes(req.body_mut()).await?;
     let request_body_log = format_body_for_logging(&request_body);
+    let request_id = match request_headers.get("x-b3-traceid") {
+        Some(request_id) => request_id,
+        None => &Uuid::new_v4().to_string().replace("-", ""),
+    };
 
-    let context = create_request_context(&method, &path);
+    let context = create_request_context(&method, &path, request_id.clone());
     let request_id = context.request_id.clone();
 
     let new_req = rebuild_request_with_context(req, request_body, context)?;
@@ -89,8 +94,8 @@ fn format_body_for_logging(body_bytes: &Bytes) -> String {
     }
 }
 
-fn create_request_context(method: &str, path: &str) -> RequestContext {
-    RequestContext::new(method.to_string(), path.to_string())
+fn create_request_context(method: &str, path: &str, request_id: String) -> RequestContext {
+    RequestContext::new(method.to_string(), path.to_string(), request_id)
         .add_metadata("timestamp".to_string(), Utc::now().to_rfc3339())
 }
 

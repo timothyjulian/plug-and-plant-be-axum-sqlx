@@ -1,6 +1,5 @@
 use sqlx::PgPool;
 use std::{collections::HashMap, sync::Arc};
-use uuid::Uuid;
 
 use crate::config::Config;
 
@@ -13,9 +12,9 @@ pub struct RequestContext {
 }
 
 impl RequestContext {
-    pub fn new(method: String, path: String) -> Self {
+    pub fn new(method: String, path: String, request_id: String) -> Self {
         Self {
-            request_id: Uuid::new_v4().to_string().replace("-", ""),
+            request_id,
             path,
             method,
             metadata: HashMap::new(),

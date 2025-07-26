@@ -54,7 +54,7 @@ async fn process_request_with_context(
         let response = next.run(new_req).await;
         let duration = start_time.elapsed();
 
-        process_response(response, &method, &path, duration).await
+        process_response(response, &method, &path, duration, request_id).await
     }
     .instrument(span)
     .await?;
@@ -121,11 +121,12 @@ async fn process_response(
     method: &str,
     path: &str,
     duration: std::time::Duration,
+    request_id: String,
 ) -> Result<Response, Box<dyn std::error::Error + Send + Sync>> {
     let status = response.status();
     let (mut parts, body) = response.into_parts();
 
-    add_timestamp_header(&mut parts.headers)?;
+    add_timestamp_header(&mut parts.headers, request_id)?;
 
     // Extract and log response body
     let response_body_bytes = match body.collect().await {
@@ -144,10 +145,19 @@ async fn process_response(
 
 fn add_timestamp_header(
     headers: &mut HeaderMap,
+    request_id: String,
 ) -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
     let timestamp = Utc::now().to_rfc3339();
-    let header_value = HeaderValue::from_str(&timestamp)?;
-    headers.insert(HeaderName::from_static("x-timestamp"), header_value);
+    let timestamp_header_value = HeaderValue::from_str(&timestamp)?;
+    let traceid_header_value = HeaderValue::from_str(&request_id)?;
+    headers.insert(
+        HeaderName::from_static("x-timestamp"),
+        timestamp_header_value,
+    );
+    headers.insert(
+        HeaderName::from_static("x-b3-traceid"),
+        traceid_header_value,
+    );
     Ok(())
 }
 

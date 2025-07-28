@@ -29,12 +29,12 @@ async fn register(
     request_ctx: Extension<RequestContext>,
     Json(payload): Json<Value>,
 ) -> AppResult<RegisterResult> {
-    if payload
+    let email =payload
         .get("email")
         .and_then(|v| v.as_str())
         .unwrap_or("")
-        .trim()
-        .is_empty()
+        .trim();
+    if email.is_empty()
     {
         return Err(HttpError {
             status: 400,
@@ -45,11 +45,30 @@ async fn register(
         });
     }
 
+
+    if payload
+        .get("password")
+        .and_then(|v| v.as_str())
+        .unwrap_or("")
+        .trim()
+        .is_empty()
+    {
+        return Err(HttpError {
+            status: 400,
+            scenario: HttpScenario::Register,
+            case: HttpErrorCase::ZeroOne,
+            error_log: String::from("Invalid Mandatory Field password is blank or not exist"),
+            output: String::from("Invalid Mandatory Field password"),
+        });
+    }
+
+
     let register_result = RegisterResult {
         saved_account: SavedAccount {
             email: String::from("test"),
         },
     };
+
     Ok(ApiResponse {
         response_code: String::from("2000000"),
         response_message: String::from("Successful"),

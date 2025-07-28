@@ -1,24 +1,31 @@
 use std::sync::Arc;
 
 use anyhow::Context;
-use axum::{http::StatusCode, response::{IntoResponse, Response}, Extension, Json, Router};
+use axum::{
+    Extension, Json, Router,
+    http::StatusCode,
+    response::{IntoResponse, Response},
+};
 use serde::Serialize;
 use sqlx::PgPool;
 use tokio::net::TcpListener;
 
 use crate::{
-    config::Config, http::{context::ApiContext, error::AppError, middleware::request_context_middleware}
+    config::Config,
+    http::{context::ApiContext, error::HttpError, middleware::request_context_middleware},
 };
 
 mod api;
 mod context;
-mod middleware;
 mod error;
+mod middleware;
 mod scenario;
+
+pub type AppResult<T> = Result<ApiResponse<T>, HttpError>;
 
 #[derive(Serialize, Debug)]
 #[serde(rename_all = "camelCase")]
-pub struct ApiResponse<T: Serialize > {
+pub struct ApiResponse<T: Serialize> {
     pub response_code: String,
     pub response_message: String,
 
@@ -32,8 +39,6 @@ impl<T: Serialize> IntoResponse for ApiResponse<T> {
         (StatusCode::OK, Json(self)).into_response()
     }
 }
-
-pub type AppResult<T> = Result<ApiResponse<T>, AppError>;
 
 pub async fn serve(config: Config, db: PgPool) -> anyhow::Result<()> {
     let listener = TcpListener::bind("127.0.0.1:3000").await?;
@@ -53,5 +58,5 @@ pub async fn serve(config: Config, db: PgPool) -> anyhow::Result<()> {
 }
 
 fn api_router() -> Router {
-    api::index::router()
+    api::index::router().merge(api::account::router())
 }

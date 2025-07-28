@@ -1,35 +1,40 @@
-use axum::{http::StatusCode, response::{IntoResponse, Response}, Json};
+use axum::{
+    Json,
+    http::StatusCode,
+    response::{IntoResponse, Response},
+};
 
 use crate::http::scenario::HttpScenario;
 
 #[derive(Debug)]
-pub struct AppError {
+pub struct HttpError {
     pub status: u16,
     pub scenario: HttpScenario,
-    pub case: ErrorCase,
+    pub case: HttpErrorCase,
     pub error_log: String,
-    pub output: String
+    pub output: String,
 }
 
 #[derive(Debug)]
-pub enum ErrorCase {
-    ZeroZero
+pub enum HttpErrorCase {
+    ZeroZero,
+    ZeroOne,
 }
 
-impl ErrorCase {
+impl HttpErrorCase {
     fn get_case(&self) -> String {
         match self {
-            ErrorCase::ZeroZero => String::from("00")
+            HttpErrorCase::ZeroZero => String::from("00"),
+            HttpErrorCase::ZeroOne => String::from("01"),
         }
     }
 }
 
-
-
-impl IntoResponse for AppError {
+impl IntoResponse for HttpError {
     fn into_response(self) -> Response {
         tracing::error!("{}", self.error_log);
-        let status_code = StatusCode::from_u16(self.status).unwrap_or(StatusCode::INTERNAL_SERVER_ERROR);
+        let status_code =
+            StatusCode::from_u16(self.status).unwrap_or(StatusCode::INTERNAL_SERVER_ERROR);
         let body = Json(serde_json::json!({
             "responseCode": format!("{}{}{}", self.status, self.scenario.get_code(), self.case.get_case()),
             "responseMessage": self.output,

@@ -1,9 +1,15 @@
 use axum::{Extension, Json, Router, routing::post};
 use serde_json::Value;
 
-use crate::{dal::account::{self, fetch_account_by_email, register_account}, http::{
-    context::{ApiContext, RequestContext}, error::{HttpError, HttpErrorCase}, scenario::HttpScenario, ApiResponse, AppResult
-}};
+use crate::{
+    dal::account::{self, fetch_account_by_email, register_account},
+    http::{
+        ApiResponse, AppResult,
+        context::{ApiContext, RequestContext},
+        error::{HttpError, HttpErrorCase},
+        scenario::HttpScenario,
+    },
+};
 
 #[derive(serde::Serialize, Debug)]
 #[serde(rename_all = "camelCase")]
@@ -26,13 +32,12 @@ async fn register(
     request_ctx: Extension<RequestContext>,
     Json(payload): Json<Value>,
 ) -> AppResult<RegisterResult> {
-    let email =payload
+    let email = payload
         .get("email")
         .and_then(|v| v.as_str())
         .unwrap_or("")
         .trim();
-    if email.is_empty()
-    {
+    if email.is_empty() {
         return Err(HttpError {
             status: 400,
             scenario: HttpScenario::Register,
@@ -42,14 +47,12 @@ async fn register(
         });
     }
 
-
-    let password =payload
+    let password = payload
         .get("password")
         .and_then(|v| v.as_str())
         .unwrap_or("")
         .trim();
-    if password.is_empty()
-    {
+    if password.is_empty() {
         return Err(HttpError {
             status: 400,
             scenario: HttpScenario::Register,
@@ -70,20 +73,19 @@ async fn register(
     }
 
     match fetch_account_by_email(&ctx.db, email.to_owned()).await {
-    Ok(account) => {
-        println!("{:?}", account);
-    },
-    Err(err) => {
-        return Err(HttpError {
-            status: 500,
-            scenario: HttpScenario::Register,
-            case: HttpErrorCase::ZeroOne,
-            error_log: format!("Failed to query: {}", err),
-            output: String::from("Internal Server Error"),
-        });
+        Ok(account) => {
+            println!("{:?}", account);
+        }
+        Err(err) => {
+            return Err(HttpError {
+                status: 500,
+                scenario: HttpScenario::Register,
+                case: HttpErrorCase::ZeroOne,
+                error_log: format!("Failed to query: {}", err),
+                output: String::from("Internal Server Error"),
+            });
+        }
     }
-}
-
 
     let register_result = RegisterResult {
         saved_account: SavedAccount {

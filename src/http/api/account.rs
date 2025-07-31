@@ -1,12 +1,9 @@
 use axum::{Extension, Json, Router, routing::post};
 use serde_json::Value;
 
-use crate::http::{
-    ApiResponse, AppResult,
-    context::{ApiContext, RequestContext},
-    error::{HttpError, HttpErrorCase},
-    scenario::HttpScenario,
-};
+use crate::{dal::account::{self, fetch_account_by_email, register_account}, http::{
+    context::{ApiContext, RequestContext}, error::{HttpError, HttpErrorCase}, scenario::HttpScenario, ApiResponse, AppResult
+}};
 
 #[derive(serde::Serialize, Debug)]
 #[serde(rename_all = "camelCase")]
@@ -46,12 +43,12 @@ async fn register(
     }
 
 
-    if payload
+    let password =payload
         .get("password")
         .and_then(|v| v.as_str())
         .unwrap_or("")
-        .trim()
-        .is_empty()
+        .trim();
+    if password.is_empty()
     {
         return Err(HttpError {
             status: 400,
@@ -61,6 +58,31 @@ async fn register(
             output: String::from("Invalid Mandatory Field password"),
         });
     }
+
+    if let Err(err) = register_account(&ctx.db, email.to_owned(), password.to_owned()).await {
+        return Err(HttpError {
+            status: 500,
+            scenario: HttpScenario::Register,
+            case: HttpErrorCase::ZeroOne,
+            error_log: format!("Failed to query: {}", err),
+            output: String::from("Internal Server Error"),
+        });
+    }
+
+    match fetch_account_by_email(&ctx.db, email.to_owned()).await {
+    Ok(account) => {
+        println!("{:?}", account);
+    },
+    Err(err) => {
+        return Err(HttpError {
+            status: 500,
+            scenario: HttpScenario::Register,
+            case: HttpErrorCase::ZeroOne,
+            error_log: format!("Failed to query: {}", err),
+            output: String::from("Internal Server Error"),
+        });
+    }
+}
 
 
     let register_result = RegisterResult {

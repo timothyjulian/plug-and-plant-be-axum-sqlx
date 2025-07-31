@@ -28,7 +28,9 @@ async fn main() -> anyhow::Result<()> {
             tracing_subscriber::fmt::layer()
                 .with_thread_ids(true)
                 .with_thread_names(true)
-                .with_level(true),
+                .with_level(true)
+                .with_file(true)
+                .with_line_number(true),
         )
         .try_init()
         .context("failed to initialize tracing subscriber")?;

@@ -58,5 +58,5 @@ pub async fn serve(config: Config, db: PgPool) -> anyhow::Result<()> {
 }
 
 fn api_router() -> Router {
-    api::index::router().merge(api::account::router())
+    api::account::router()
 }

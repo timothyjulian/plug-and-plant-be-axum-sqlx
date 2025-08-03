@@ -19,6 +19,7 @@ pub struct HttpError {
 pub enum HttpErrorCase {
     ZeroZero,
     ZeroOne,
+    ZeroThree,
 }
 
 impl HttpErrorCase {
@@ -26,6 +27,7 @@ impl HttpErrorCase {
         match self {
             HttpErrorCase::ZeroZero => String::from("00"),
             HttpErrorCase::ZeroOne => String::from("01"),
+            HttpErrorCase::ZeroThree => String::from("03"),
         }
     }
 }

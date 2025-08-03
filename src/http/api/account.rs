@@ -32,7 +32,53 @@ async fn register(
     request_ctx: Extension<RequestContext>,
     Json(payload): Json<Value>,
 ) -> AppResult<RegisterResult> {
-    let email = payload
+    let (email, password) = validate_payload_register(payload)?;
+    match fetch_account_by_email(&ctx.db, &email).await {
+        Ok(account) => {
+            if let Some(account) = account {
+                return Err(HttpError {
+                    status: 400,
+                    scenario: HttpScenario::Register,
+                    case: HttpErrorCase::ZeroThree,
+                    error_log: format!("Email already registered: {}", account.email),
+                    output: String::from("Email already registered"),
+                });
+            }
+        }
+        Err(err) => {
+            return Err(HttpError {
+                status: 500,
+                scenario: HttpScenario::Register,
+                case: HttpErrorCase::ZeroOne,
+                error_log: format!("Failed to query: {}", err),
+                output: String::from("Internal Server Error"),
+            });
+        }
+    }
+
+    if let Err(err) = register_account(&ctx.db, &email, &password).await {
+        return Err(HttpError {
+            status: 500,
+            scenario: HttpScenario::Register,
+            case: HttpErrorCase::ZeroOne,
+            error_log: format!("Failed to insert: {}", err),
+            output: String::from("Internal Server Error"),
+        });
+    }
+
+    let register_result = RegisterResult {
+        saved_account: SavedAccount { email },
+    };
+
+    Ok(ApiResponse {
+        response_code: String::from("2000000"),
+        response_message: String::from("Successful"),
+        data: register_result,
+    })
+}
+
+fn validate_payload_register(register_payload: Value) -> Result<(String, String), HttpError> {
+    let email = register_payload
         .get("email")
         .and_then(|v| v.as_str())
         .unwrap_or("")
@@ -47,7 +93,7 @@ async fn register(
         });
     }
 
-    let password = payload
+    let password = register_payload
         .get("password")
         .and_then(|v| v.as_str())
         .unwrap_or("")
@@ -62,40 +108,5 @@ async fn register(
         });
     }
 
-    if let Err(err) = register_account(&ctx.db, email.to_owned(), password.to_owned()).await {
-        return Err(HttpError {
-            status: 500,
-            scenario: HttpScenario::Register,
-            case: HttpErrorCase::ZeroOne,
-            error_log: format!("Failed to query: {}", err),
-            output: String::from("Internal Server Error"),
-        });
-    }
-
-    match fetch_account_by_email(&ctx.db, email.to_owned()).await {
-        Ok(account) => {
-            println!("{:?}", account);
-        }
-        Err(err) => {
-            return Err(HttpError {
-                status: 500,
-                scenario: HttpScenario::Register,
-                case: HttpErrorCase::ZeroOne,
-                error_log: format!("Failed to query: {}", err),
-                output: String::from("Internal Server Error"),
-            });
-        }
-    }
-
-    let register_result = RegisterResult {
-        saved_account: SavedAccount {
-            email: String::from("test"),
-        },
-    };
-
-    Ok(ApiResponse {
-        response_code: String::from("2000000"),
-        response_message: String::from("Successful"),
-        data: register_result,
-    })
+    Ok((String::from(email), String::from(password)))
 }

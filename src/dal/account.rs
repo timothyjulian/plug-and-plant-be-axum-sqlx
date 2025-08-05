@@ -1,5 +1,5 @@
 use anyhow::{Error, Ok};
-use chrono::{DateTime, Local, NaiveDateTime};
+use chrono::{DateTime, Local};
 use sqlx::{PgPool, prelude::FromRow};
 
 #[derive(FromRow, Debug)]

@@ -4,6 +4,7 @@ use axum::{Extension, Json, Router, routing::post};
 use once_cell::sync::Lazy;
 use regex::Regex;
 use serde_json::Value;
+use sha2::{Digest, Sha256};
 
 const MINIMUM_LENGTH: usize = 6;
 static EMAIL_REGEX: Lazy<Regex> = Lazy::new(|| Regex::new(r"^[^\s@]+@[^\s@]+\.[^\s@]+$").unwrap());
@@ -67,6 +68,8 @@ async fn register(
             });
         }
     }
+
+    let password = hash_password(password);
 
     if let Err(err) = register_account(&ctx.db, &email, &password).await {
         return Err(HttpError {
@@ -194,4 +197,10 @@ fn check_requirement_count(count: usize, last: Option<&str>) -> Result<(), HttpE
             output: message,
         })
     }
+}
+
+fn hash_password(password: String) -> String {
+    let mut hasher = Sha256::new();
+    hasher.update(password);
+    format!("{:x}", hasher.finalize())
 }

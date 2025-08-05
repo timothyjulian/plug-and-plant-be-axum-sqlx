@@ -1,5 +1,5 @@
 use anyhow::{Error, Ok};
-use chrono::{DateTime, Local};
+use chrono::{DateTime, Local, Utc};
 use sqlx::{PgPool, prelude::FromRow};
 
 #[derive(FromRow, Debug)]
@@ -26,13 +26,14 @@ pub async fn register_account(
     email: &String,
     password: &String,
 ) -> Result<(), Error> {
+    let now = Utc::now().naive_utc(); // This is UTC time
     sqlx::query(
         "INSERT INTO account(email, password, utc_create, utc_modified) VALUES ($1, $2, $3, $4);",
     )
     .bind(email)
     .bind(password)
-    .bind(Local::now().naive_local())
-    .bind(Local::now().naive_local())
+    .bind(now)
+    .bind(now)
     .execute(pool)
     .await?;
     Ok(())

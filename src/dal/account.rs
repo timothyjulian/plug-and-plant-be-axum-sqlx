@@ -1,13 +1,13 @@
 use anyhow::{Error, Ok};
-use chrono::{DateTime, Local, Utc};
+use chrono::{DateTime, Utc};
 use sqlx::{PgPool, prelude::FromRow};
 
 #[derive(FromRow, Debug)]
 pub struct Account {
     pub email: String,
     pub password: String,
-    pub utc_create: DateTime<Local>,
-    pub utc_modified: DateTime<Local>,
+    pub utc_create: DateTime<Utc>,
+    pub utc_modified: DateTime<Utc>,
 }
 
 pub async fn fetch_account_by_email(

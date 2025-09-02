@@ -8,7 +8,7 @@ use axum::{
 };
 use serde::Serialize;
 use sqlx::PgPool;
-use tokio::net::TcpListener;
+use tokio::{net::TcpListener, time::Instant};
 
 use crate::{
     config::Config,
@@ -40,7 +40,7 @@ impl<T: Serialize> IntoResponse for ApiResponse<T> {
     }
 }
 
-pub async fn serve(config: Config, db: PgPool) -> anyhow::Result<()> {
+pub async fn serve(config: Config, db: PgPool, start_time: Instant) -> anyhow::Result<()> {
     let listener = TcpListener::bind("127.0.0.1:3000").await?;
     let app = api_router()
         .layer(axum::middleware::from_fn(request_context_middleware))
@@ -49,7 +49,10 @@ pub async fn serve(config: Config, db: PgPool) -> anyhow::Result<()> {
             db: db,
         }));
 
-    tracing::info!("🚀 Server started at http://127.0.0.1:3000");
+    tracing::info!(
+        "🚀 Server started at http://127.0.0.1:3000 by {} ms",
+        start_time.elapsed().as_millis()
+    );
     axum::serve(listener, app)
         .await
         .context("cannot start http server")?;

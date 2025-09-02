@@ -1,5 +1,4 @@
 use std::collections::HashMap;
-use std::time::Instant;
 
 use axum::{
     body::Body,
@@ -12,6 +11,7 @@ use bytes::Bytes;
 use chrono::Utc;
 use http_body_util::BodyExt;
 use serde_json::Value;
+use tokio::time::Instant;
 use tracing::Instrument;
 use uuid::Uuid;
 

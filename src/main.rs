@@ -3,11 +3,13 @@ use clap::Parser;
 use plug_and_plant_be_axum_sqlx::config::Config;
 use plug_and_plant_be_axum_sqlx::http;
 use sqlx::postgres::PgPoolOptions;
+use tokio::time::Instant;
 use tracing_subscriber::EnvFilter;
 use tracing_subscriber::prelude::*;
 
 #[tokio::main]
 async fn main() -> anyhow::Result<()> {
+    let start_time = Instant::now();
     println!(
         r#"
 ██████╗ ██╗     ██╗   ██╗ ██████╗    ██╗   ██████╗ ██╗      █████╗ ███╗   ██╗████████╗
@@ -45,7 +47,7 @@ async fn main() -> anyhow::Result<()> {
     // is migrated correctly on startup
     sqlx::migrate!("./migrations").run(&db).await?;
 
-    http::serve(config, db).await?;
+    http::serve(config, db, start_time).await?;
 
     Ok(())
 }

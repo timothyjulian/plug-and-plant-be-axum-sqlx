@@ -17,6 +17,7 @@ use crate::{
     dal::account::{fetch_account_by_email, register_account},
     http::{
         ApiResponse, AppResult,
+        api::safe_json::SafeJson,
         context::{ApiContext, RequestContext},
         error::{HttpError, HttpErrorCase},
         scenario::HttpScenario,
@@ -42,7 +43,7 @@ pub fn router() -> Router {
 async fn register(
     ctx: Extension<ApiContext>,
     request_ctx: Extension<RequestContext>,
-    Json(payload): Json<Value>,
+    SafeJson(payload): SafeJson<Value>,
 ) -> AppResult<RegisterResult> {
     let (email, password) = validate_payload_register(payload)?;
     check_password_requirements(&password)?;

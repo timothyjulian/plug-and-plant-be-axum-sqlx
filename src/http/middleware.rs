@@ -5,7 +5,7 @@ use axum::{
     extract::Request,
     http::{HeaderMap, HeaderName, HeaderValue, StatusCode},
     middleware::Next,
-    response::Response,
+    response::{IntoResponse, Response},
 };
 use bytes::Bytes;
 use chrono::Utc;
@@ -15,18 +15,27 @@ use tokio::time::Instant;
 use tracing::Instrument;
 use uuid::Uuid;
 
-use crate::http::context::RequestContext;
+use crate::http::{
+    context::RequestContext,
+    error::{HttpError, HttpErrorCase},
+    scenario::HttpScenario,
+};
 
 pub async fn request_context_middleware(req: Request, next: Next) -> Response {
     let start_time = Instant::now();
-
-    match process_request_with_context(req, next, start_time).await {
-        Ok(response) => response,
-        Err(error) => {
+    process_request_with_context(req, next, start_time)
+        .await
+        .unwrap_or_else(|error| {
             tracing::error!("Request processing failed: {}", error);
-            create_error_response()
-        }
-    }
+            HttpError {
+                status: 500,
+                scenario: HttpScenario::Index,
+                case: HttpErrorCase::ZeroOne,
+                error_log: format!("Middleware error: {}", error),
+                output: "Internal Server Error".to_string(),
+            }
+            .into_response()
+        })
 }
 
 async fn process_request_with_context(
@@ -193,13 +202,6 @@ fn log_request_summary(
         duration.as_millis(),
         status
     );
-}
-
-fn create_error_response() -> Response {
-    Response::builder()
-        .status(StatusCode::INTERNAL_SERVER_ERROR)
-        .body(Body::from("Internal server error"))
-        .unwrap_or_else(|_| Response::new(Body::empty()))
 }
 
 fn headers_to_map(headers: &HeaderMap) -> HashMap<String, String> {

@@ -1,3 +1,5 @@
+use std::time::Duration;
+
 use anyhow::Context;
 use clap::Parser;
 use plug_and_plant_be_axum_sqlx::config::Config;
@@ -38,7 +40,10 @@ async fn main() -> anyhow::Result<()> {
         .context("failed to initialize tracing subscriber")?;
 
     let db = PgPoolOptions::new()
-        .max_connections(10)
+        .max_connections(config.max_db_connection)
+        .acquire_timeout(Duration::from_secs(30))
+        .idle_timeout(Duration::from_secs(600))
+        .max_lifetime(Duration::from_secs(1800))
         .connect(&config.database_url)
         .await
         .context("could not connect to database_url")?;

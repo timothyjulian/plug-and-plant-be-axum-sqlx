@@ -17,8 +17,8 @@ use uuid::Uuid;
 
 use crate::http::{
     context::RequestContext,
-    error::{HttpError, HttpErrorCase},
-    scenario::HttpScenario,
+    result::app_result::HttpError,
+    utils::{error::HttpErrorCase, scenario::HttpScenario},
 };
 
 pub async fn request_context_middleware(req: Request, next: Next) -> Response {

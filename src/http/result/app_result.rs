@@ -3,8 +3,28 @@ use axum::{
     http::StatusCode,
     response::{IntoResponse, Response},
 };
+use serde::Serialize;
 
-use crate::http::scenario::HttpScenario;
+use crate::http::utils::{error::HttpErrorCase, scenario::HttpScenario};
+
+pub type AppResult<T> = Result<ApiResponse<T>, HttpError>;
+
+#[derive(Serialize, Debug)]
+#[serde(rename_all = "camelCase")]
+pub struct ApiResponse<T: Serialize> {
+    pub response_code: String,
+    pub response_message: String,
+
+    #[serde(flatten)]
+    pub data: T,
+}
+
+impl<T: Serialize> IntoResponse for ApiResponse<T> {
+    fn into_response(self) -> Response {
+        // Serialize and wrap in Axum's Json
+        (StatusCode::OK, Json(self)).into_response()
+    }
+}
 
 #[derive(Debug)]
 pub struct HttpError {
@@ -13,25 +33,6 @@ pub struct HttpError {
     pub case: HttpErrorCase,
     pub error_log: String,
     pub output: String,
-}
-
-#[derive(Debug)]
-pub enum HttpErrorCase {
-    ZeroZero,
-    ZeroOne,
-    ZeroThree,
-    ZeroSix,
-}
-
-impl HttpErrorCase {
-    fn get_case(&self) -> String {
-        match self {
-            HttpErrorCase::ZeroZero => String::from("00"),
-            HttpErrorCase::ZeroOne => String::from("01"),
-            HttpErrorCase::ZeroThree => String::from("03"),
-            HttpErrorCase::ZeroSix => String::from("06"),
-        }
-    }
 }
 
 impl IntoResponse for HttpError {

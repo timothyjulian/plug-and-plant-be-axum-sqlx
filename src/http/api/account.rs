@@ -1,8 +1,7 @@
 use axum::{Extension, Router, routing::post};
-use sha2::{Digest, Sha256};
+use sha2::Digest;
 
 use crate::{
-    dal::account::{fetch_account_by_email, register_account},
     http::{
         context::{ApiContext, RequestContext},
         request::{account::RegisterRequest, safe_json::SafeJson},
@@ -12,6 +11,7 @@ use crate::{
         },
         utils::{error::HttpErrorCase, scenario::HttpScenario},
     },
+    services::{handler::account::AccountService, utils::error::AppError},
 };
 
 pub fn router() -> Router {
@@ -23,41 +23,24 @@ async fn register(
     request_ctx: Extension<RequestContext>,
     SafeJson(payload): SafeJson<RegisterRequest>,
 ) -> AppResult<RegisterResult> {
-    // TODO move to account_service
-    match fetch_account_by_email(&ctx.db, &payload.email).await {
-        Ok(account) => {
-            if let Some(account) = account {
-                return Err(HttpError {
-                    status: 400,
-                    scenario: HttpScenario::Register,
-                    case: HttpErrorCase::ZeroThree,
-                    error_log: format!("Email already registered: {}", account.email),
-                    output: String::from("Email already registered"),
-                });
-            }
-        }
-        Err(err) => {
-            return Err(HttpError {
+    AccountService::register(&ctx.db, &payload.email, &payload.password)
+        .await
+        .map_err(|err| match err {
+            AppError::EmailRegistered { account } => HttpError {
+                status: 400,
+                scenario: HttpScenario::Register,
+                case: HttpErrorCase::ZeroThree,
+                error_log: format!("Email already registered: {}", account.email),
+                output: String::from("Email already registered"),
+            },
+            AppError::SqlxError { msg } => HttpError {
                 status: 500,
                 scenario: HttpScenario::Register,
                 case: HttpErrorCase::ZeroOne,
-                error_log: format!("Failed to query: {}", err),
+                error_log: msg,
                 output: String::from("Internal Server Error"),
-            });
-        }
-    }
-
-    let password = hash_password(payload.password);
-
-    if let Err(err) = register_account(&ctx.db, &payload.email, &password).await {
-        return Err(HttpError {
-            status: 500,
-            scenario: HttpScenario::Register,
-            case: HttpErrorCase::ZeroOne,
-            error_log: format!("Failed to insert: {}", err),
-            output: String::from("Internal Server Error"),
-        });
-    }
+            },
+        })?;
 
     let register_result = RegisterResult {
         saved_account: SavedAccount {
@@ -70,10 +53,4 @@ async fn register(
         response_message: String::from("Successful"),
         data: register_result,
     })
-}
-
-fn hash_password(password: String) -> String {
-    let mut hasher = Sha256::new();
-    hasher.update(password);
-    format!("{:x}", hasher.finalize())
 }

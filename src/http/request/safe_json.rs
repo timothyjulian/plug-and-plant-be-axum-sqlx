@@ -3,12 +3,9 @@ use http_body_util::BodyExt;
 use serde::de::DeserializeOwned;
 use serde_json::Value;
 
-use crate::{
-    http::{
-        result::app_result::HttpError,
-        utils::{error::HttpErrorCase, scenario::HttpScenario},
-    },
-    utils::validator::ValidateFieldsJSON,
+use crate::http::{
+    result::app_result::HttpError,
+    utils::{error::HttpErrorCase, scenario::HttpScenario, validator::ValidateFieldsJSON},
 };
 
 pub struct SafeJson<T>(pub T);

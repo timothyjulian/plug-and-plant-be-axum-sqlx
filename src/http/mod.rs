@@ -14,8 +14,8 @@ mod api;
 mod context;
 mod middleware;
 mod request;
-pub mod result;
-pub mod utils;
+mod result;
+mod utils;
 
 pub async fn serve(config: Config, db: PgPool, start_time: Instant) -> anyhow::Result<()> {
     let listener = TcpListener::bind("127.0.0.1:3000").await?;

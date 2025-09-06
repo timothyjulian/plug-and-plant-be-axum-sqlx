@@ -5,12 +5,9 @@ use regex::Regex;
 use serde::Deserialize;
 use serde_json::Value;
 
-use crate::{
-    http::{
-        result::app_result::HttpError,
-        utils::{error::HttpErrorCase, scenario::HttpScenario},
-    },
-    utils::validator::ValidateFieldsJSON,
+use crate::http::{
+    result::app_result::HttpError,
+    utils::{error::HttpErrorCase, scenario::HttpScenario, validator::ValidateFieldsJSON},
 };
 
 static EMAIL_REGEX: Lazy<Regex> = Lazy::new(|| Regex::new(r"^[^\s@]+@[^\s@]+\.[^\s@]+$").unwrap());

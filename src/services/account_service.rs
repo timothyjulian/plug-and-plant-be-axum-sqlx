@@ -1,3 +1,5 @@
 pub struct AccountService;
 
-impl AccountService {}
+impl AccountService {
+    fn register() {}
+}

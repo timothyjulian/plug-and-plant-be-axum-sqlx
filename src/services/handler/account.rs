@@ -2,10 +2,13 @@ use sha2::{Digest, Sha256};
 use sqlx::PgPool;
 
 use crate::{
-    dal::account::{fetch_account_by_email, insert_account},
+    dal::account::{
+        self, fetch_account_by_email, fetch_account_by_email_and_password, insert_account,
+    },
     services::utils::error::AppError,
 };
 
+// TODO change to account normal no service, Rusty way
 pub async fn register_user(pool: &PgPool, email: &str, password: &str) -> Result<(), AppError> {
     let account = fetch_account_by_email(pool, email)
         .await
@@ -28,6 +31,18 @@ pub async fn register_user(pool: &PgPool, email: &str, password: &str) -> Result
 }
 
 pub async fn login(pool: &PgPool, email: &str, password: &str) -> Result<(), AppError> {
+    let password = hash_password(password);
+    let account = fetch_account_by_email_and_password(pool, email, &password)
+        .await
+        .map_err(|err| AppError::SqlxError {
+            msg: format!("Failed to query: {}", err),
+        })?;
+    
+    if let None = account {
+        return Err(AppError::InvalidCredentials { msg: String::from("Invalid Account") });
+    }
+
+
     Ok(())
 }
 

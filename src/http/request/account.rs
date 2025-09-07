@@ -1,4 +1,4 @@
-use std::collections::HashMap;
+use std::{collections::HashMap, vec};
 
 use once_cell::sync::Lazy;
 use regex::Regex;
@@ -48,6 +48,26 @@ impl ValidateFieldsJSON for RegisterRequest {
         }
 
         check_password_requirements(&self.password)?;
+
+        Ok(())
+    }
+}
+
+impl ValidateFieldsJSON for LoginRequest {
+    fn get_mandatory_field() -> Vec<&'static str> {
+        vec!["email", "password"]
+    }
+
+    fn validate_business_logic(&self) -> Result<(), HttpError> {
+        if !EMAIL_REGEX.is_match(&self.email) {
+            return Err(HttpError {
+                status: 400,
+                scenario: HttpScenario::Login,
+                case: HttpErrorCase::ZeroOne,
+                error_log: String::from("Email is not a valid email!"),
+                output: String::from("Invalid Field Format email"),
+            });
+        }
 
         Ok(())
     }

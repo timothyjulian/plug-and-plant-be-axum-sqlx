@@ -19,7 +19,7 @@ pub struct LoginResult {
 #[derive(serde::Serialize, Debug)]
 #[serde(rename_all = "camelCase")]
 pub struct LoggedAccount {
-    email: String,
-    session_id: String,
-    session_expire_time: String,
+    pub email: String,
+    pub session_id: String,
+    pub session_expire_time: String,
 }

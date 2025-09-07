@@ -97,6 +97,7 @@ where
 fn path_to_scenario(path: &str) -> HttpScenario {
     match path {
         "/account/register" => HttpScenario::Register,
+        "/account/login" => HttpScenario::Login,
         _ => HttpScenario::Index, // Default fallback
     }
 }

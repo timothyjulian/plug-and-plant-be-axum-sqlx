@@ -2,6 +2,7 @@
 pub enum HttpScenario {
     Index,
     Register,
+    Login,
 }
 
 impl HttpScenario {
@@ -9,6 +10,7 @@ impl HttpScenario {
         match self {
             HttpScenario::Index => String::from("00"),
             HttpScenario::Register => String::from("13"),
+            HttpScenario::Login => String::from("14"),
         }
     }
 }

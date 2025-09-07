@@ -13,21 +13,21 @@ use crate::{
         },
         utils::{error::HttpErrorCase, scenario::HttpScenario},
     },
-    services::{handler::account::AccountService, utils::error::AppError},
+    services::{handler::account::register_user, utils::error::AppError},
 };
 
 pub fn router() -> Router {
     Router::new()
-        .route("/account/register", post(register))
+        .route("/account/register", post(handle_register_user))
         .route("/account/login", post(login))
 }
 
-async fn register(
+async fn handle_register_user(
     ctx: Extension<ApiContext>,
     request_ctx: Extension<RequestContext>,
     SafeJson(payload): SafeJson<RegisterRequest>,
 ) -> AppResult<RegisterResult> {
-    AccountService::register(&ctx.db, &payload.email, &payload.password)
+    register_user(&ctx.db, &payload.email, &payload.password)
         .await
         .map_err(|err| match err {
             AppError::EmailRegistered { account } => HttpError {

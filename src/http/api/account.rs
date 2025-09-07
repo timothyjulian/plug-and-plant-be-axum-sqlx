@@ -40,6 +40,13 @@ async fn register(
                 error_log: msg,
                 output: String::from("Internal Server Error"),
             },
+            other => HttpError {
+                status: 500,
+                scenario: HttpScenario::Register,
+                case: HttpErrorCase::ZeroOne,
+                error_log: format!("Unexpected error: {:?}", other),
+                output: String::from("Internal Server error"),
+            },
         })?;
 
     let register_result = RegisterResult {

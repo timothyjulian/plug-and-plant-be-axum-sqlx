@@ -40,7 +40,7 @@ pub async fn fetch_account_by_email_and_password(
     password: &str,
 ) -> Result<Option<Account>, sqlx::Error> {
     let account: Option<Account> =
-        sqlx::query_as("SELECT * FROM account WHERE email = $1 AND password $2;")
+        sqlx::query_as("SELECT * FROM account WHERE email = $1 AND password = $2;")
             .bind(email)
             .bind(password)
             .fetch_optional(pool)

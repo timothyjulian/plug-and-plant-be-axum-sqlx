@@ -2,14 +2,19 @@ use sha2::{Digest, Sha256};
 use sqlx::PgPool;
 
 use crate::{
-    dal::account::{
-        self, fetch_account_by_email, fetch_account_by_email_and_password, insert_account,
+    dal::account::{fetch_account_by_email, fetch_account_by_email_and_password, insert_account},
+    services::{
+        model::account::{LoggedAccount, SavedAccount},
+        utils::error::AppError,
     },
-    services::utils::error::AppError,
 };
 
 // TODO change to account normal no service, Rusty way
-pub async fn register_user(pool: &PgPool, email: &str, password: &str) -> Result<(), AppError> {
+pub async fn register_user(
+    pool: &PgPool,
+    email: &str,
+    password: &str,
+) -> Result<SavedAccount, AppError> {
     let account = fetch_account_by_email(pool, email)
         .await
         .map_err(|err| AppError::SqlxError {
@@ -27,23 +32,35 @@ pub async fn register_user(pool: &PgPool, email: &str, password: &str) -> Result
             msg: format!("Failed to insert: {}", err),
         });
     }
-    Ok(())
+
+    Ok(SavedAccount {
+        email: email.to_string(),
+    })
 }
 
-pub async fn login(pool: &PgPool, email: &str, password: &str) -> Result<(), AppError> {
+pub async fn login_user(
+    pool: &PgPool,
+    email: &str,
+    password: &str,
+) -> Result<LoggedAccount, AppError> {
     let password = hash_password(password);
     let account = fetch_account_by_email_and_password(pool, email, &password)
         .await
         .map_err(|err| AppError::SqlxError {
             msg: format!("Failed to query: {}", err),
         })?;
-    
+
     if let None = account {
-        return Err(AppError::InvalidCredentials { msg: String::from("Invalid Account") });
+        return Err(AppError::InvalidCredentials {
+            msg: String::from("Invalid Account"),
+        });
     }
 
-
-    Ok(())
+    Ok(LoggedAccount {
+        email: account.unwrap().email,
+        session_id: String::from("test"),
+        session_expire_time: String::from("test"),
+    })
 }
 
 fn hash_password(password: &str) -> String {

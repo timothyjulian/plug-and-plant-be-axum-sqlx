@@ -3,6 +3,7 @@ pub enum HttpErrorCase {
     ZeroZero,
     ZeroOne,
     ZeroThree,
+    ZeroFour,
     ZeroSix,
 }
 
@@ -13,6 +14,7 @@ impl HttpErrorCase {
             HttpErrorCase::ZeroOne => String::from("01"),
             HttpErrorCase::ZeroThree => String::from("03"),
             HttpErrorCase::ZeroSix => String::from("06"),
+            HttpErrorCase::ZeroFour => String::from("04"),
         }
     }
 }

@@ -1,3 +1,5 @@
+use crate::services::model::account::{LoggedAccount, SavedAccount};
+
 #[derive(serde::Serialize, Debug)]
 #[serde(rename_all = "camelCase")]
 pub struct RegisterResult {
@@ -6,20 +8,6 @@ pub struct RegisterResult {
 
 #[derive(serde::Serialize, Debug)]
 #[serde(rename_all = "camelCase")]
-pub struct SavedAccount {
-    pub email: String,
-}
-
-#[derive(serde::Serialize, Debug)]
-#[serde(rename_all = "camelCase")]
 pub struct LoginResult {
     pub logged_account: LoggedAccount,
-}
-
-#[derive(serde::Serialize, Debug)]
-#[serde(rename_all = "camelCase")]
-pub struct LoggedAccount {
-    pub email: String,
-    pub session_id: String,
-    pub session_expire_time: String,
 }

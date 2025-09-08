@@ -8,18 +8,21 @@ use crate::{
             safe_json::SafeJson,
         },
         result::{
-            account::{LoggedAccount, LoginResult, RegisterResult, SavedAccount},
+            account::{LoginResult, RegisterResult},
             app_result::{ApiResponse, AppResult, HttpError},
         },
         utils::{error::HttpErrorCase, scenario::HttpScenario},
     },
-    services::{handler::account::register_user, utils::error::AppError},
+    services::{
+        handler::account::{login_user, register_user},
+        utils::error::AppError,
+    },
 };
 
 pub fn router() -> Router {
     Router::new()
         .route("/account/register", post(handle_register_user))
-        .route("/account/login", post(login))
+        .route("/account/login", post(handle_login_user))
 }
 
 async fn handle_register_user(
@@ -27,7 +30,7 @@ async fn handle_register_user(
     request_ctx: Extension<RequestContext>,
     SafeJson(payload): SafeJson<RegisterRequest>,
 ) -> AppResult<RegisterResult> {
-    register_user(&ctx.db, &payload.email, &payload.password)
+    let saved_account = register_user(&ctx.db, &payload.email, &payload.password)
         .await
         .map_err(|err| match err {
             AppError::EmailRegistered { account } => HttpError {
@@ -53,11 +56,7 @@ async fn handle_register_user(
             },
         })?;
 
-    let register_result = RegisterResult {
-        saved_account: SavedAccount {
-            email: payload.email,
-        },
-    };
+    let register_result = RegisterResult { saved_account };
 
     Ok(ApiResponse {
         response_code: String::from("2001300"),
@@ -66,17 +65,30 @@ async fn handle_register_user(
     })
 }
 
-async fn login(
+async fn handle_login_user(
     ctx: Extension<ApiContext>,
     request_ctx: Extension<RequestContext>,
     SafeJson(payload): SafeJson<LoginRequest>,
 ) -> AppResult<LoginResult> {
     // TODO query dll
-    let logged_account = LoggedAccount {
-        email: String::from("test"),
-        session_id: String::from("test"),
-        session_expire_time: String::from("test"),
-    };
+    let logged_account = login_user(&ctx.db, &payload.email, &payload.password)
+        .await
+        .map_err(|err| match err {
+            AppError::InvalidCredentials { msg } => HttpError {
+                status: 400,
+                scenario: HttpScenario::Login,
+                case: HttpErrorCase::ZeroFour,
+                error_log: format!("Invalid email/ password"),
+                output: format!("Invalid email/password"),
+            },
+            other => HttpError {
+                status: 500,
+                scenario: HttpScenario::Login,
+                case: HttpErrorCase::ZeroOne,
+                error_log: format!("Unexpected error: {:?}", other),
+                output: String::from("Internal Server error"),
+            },
+        })?;
 
     let login_result = LoginResult { logged_account };
 

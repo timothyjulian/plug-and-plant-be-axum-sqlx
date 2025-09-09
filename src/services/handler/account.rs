@@ -9,7 +9,6 @@ use crate::{
     },
 };
 
-// TODO change to account normal no service, Rusty way
 pub async fn register_user(
     pool: &PgPool,
     email: &str,

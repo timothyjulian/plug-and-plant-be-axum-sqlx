@@ -6,3 +6,5 @@ CREATE TABLE session (
     utc_create TIMESTAMPTZ NOT NULL,
     utc_modified TIMESTAMPTZ NOT NULL
 );
+
+CREATE INDEX account_id_utc_create_session_idx ON session(account_id, utc_create DESC);

@@ -3,6 +3,7 @@ use sqlx::{PgPool, prelude::FromRow};
 
 #[derive(FromRow, Debug)]
 pub struct Account {
+    pub id: i32,
     pub email: String,
     pub password: String,
     pub utc_create: DateTime<Utc>,
